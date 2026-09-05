@@ -1,0 +1,1336 @@
+openapi: 3.1.0
+info:
+  title: GoldMatrix API Enterprise
+  description: Institutional-grade market data and analysis API for gold, metals, crypto, forex, and indices.
+  version: 1.0.0
+  contact:
+    name: GoldMatrix Support
+    email: support@goldmatrix.io
+  license:
+    name: Proprietary
+    url: https://goldmatrix.io/terms
+
+servers:
+  - url: https://goldmatrix-api-enterprise.moneybillioneria.workers.dev
+    description: Production Server
+
+tags:
+  - name: Health
+    description: Service health and readiness checks
+  - name: Market Data
+    description: Real-time and historical market data
+  - name: Indicators
+    description: Technical indicators and metrics
+  - name: Analysis
+    description: Comprehensive market analysis and trading signals
+  - name: News
+    description: Market news and economic events
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health Check
+      description: Returns the service health status and version information.
+      operationId: getHealth
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: ok
+                timestamp: 1699123456789
+                version: 1.0.0
+                uptime: 3600
+                providerStatus:
+                  bybit: healthy
+                  capital: healthy
+                  alphaVantage: healthy
+        '500':
+          description: Service is unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: error
+                code: INTERNAL_ERROR
+                message: Service is unhealthy
+                timestamp: 1699123456789
+
+  /price:
+    get:
+      tags:
+        - Market Data
+      summary: Get Live Price
+      description: Returns the current live price, bid, ask, spread, and timestamp for a given symbol.
+      operationId: getPrice
+      parameters:
+        - name: symbol
+          in: query
+          required: true
+          description: The canonical symbol to fetch the price for (e.g., BTCUSD, XAUUSD, EURUSD, NAS100)
+          schema:
+            type: string
+            example: BTCUSD
+            enum:
+              - BTCUSD
+              - ETHUSD
+              - SOLUSD
+              - XRPUSD
+              - DOGEUSD
+              - ADAUSD
+              - LINKUSD
+              - AVAXUSD
+              - TRXUSD
+              - TONUSD
+              - PEPEUSD
+              - APTUSD
+              - SUIUSD
+              - XAUUSD
+              - XAGUSD
+              - EURUSD
+              - GBPUSD
+              - USDJPY
+              - USDCHF
+              - USDCAD
+              - AUDUSD
+              - NZDUSD
+              - NAS100
+              - US30
+              - SPX500
+              - WTI
+              - BRENT
+              - DXY
+              - US10Y
+      responses:
+        '200':
+          description: Price data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriceResponse'
+              example:
+                price: 43872.50
+                bid: 43870.00
+                ask: 43875.00
+                spread: 5.00
+                timestamp: 1699123456789
+                resolvedInstrument:
+                  category: spot
+                  symbol: BTCUSDT
+        '400':
+          description: Invalid symbol parameter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: error
+                code: VALIDATION_ERROR
+                message: 'Invalid symbol "INVALID". Supported symbols: BTCUSD, ETHUSD, ...'
+                timestamp: 1699123456789
+        '404':
+          description: Symbol not found or not available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: error
+                code: NOT_FOUND
+                message: '"BTCUSD" is not available via Bybit V5 right now'
+                timestamp: 1699123456789
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: error
+                code: INTERNAL_ERROR
+                message: Provider error: Failed to fetch data from upstream
+                timestamp: 1699123456789
+        '502':
+          description: Upstream provider error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: error
+                code: PROVIDER_ERROR
+                message: Bybit API error: rate limit exceeded
+                timestamp: 1699123456789
+
+  /candles:
+    get:
+      tags:
+        - Market Data
+      summary: Get Candles
+      description: Returns historical candlestick data for a given symbol, timeframe, and limit.
+      operationId: getCandles
+      parameters:
+        - name: symbol
+          in: query
+          required: true
+          description: The canonical symbol to fetch candles for
+          schema:
+            type: string
+            example: BTCUSD
+        - name: timeframe
+          in: query
+          required: false
+          description: The timeframe for each candle
+          schema:
+            type: string
+            enum:
+              - M1
+              - M5
+              - M15
+              - H1
+              - H4
+              - D1
+              - W1
+              - MN
+            default: H1
+            example: H1
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of candles to return (1-1000)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 200
+            example: 200
+      responses:
+        '200':
+          description: Candles retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CandlesResponse'
+              example:
+                symbol: BTCUSD
+                timeframe: H1
+                count: 200
+                candles:
+                  - time: 1699120000000
+                    open: 43800.00
+                    high: 43900.00
+                    low: 43750.00
+                    close: 43872.50
+                    volume: 1250.45
+        '400':
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Symbol not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: error
+                code: RATE_LIMITED
+                message: Rate limit exceeded. Please wait before making another request.
+                timestamp: 1699123456789
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /indicators:
+    get:
+      tags:
+        - Indicators
+      summary: Get Technical Indicators
+      description: Returns technical indicators for a given symbol, timeframe, and limit.
+      operationId: getIndicators
+      parameters:
+        - name: symbol
+          in: query
+          required: true
+          description: The canonical symbol to fetch indicators for
+          schema:
+            type: string
+            example: BTCUSD
+        - name: timeframe
+          in: query
+          required: false
+          description: The timeframe for indicator calculation
+          schema:
+            type: string
+            enum:
+              - M1
+              - M5
+              - M15
+              - H1
+              - H4
+              - D1
+              - W1
+              - MN
+            default: H1
+            example: H1
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of candles to calculate indicators for (1-1000)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 200
+            example: 200
+      responses:
+        '200':
+          description: Indicators retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IndicatorsResponse'
+              example:
+                symbol: BTCUSD
+                timeframe: H1
+                indicators:
+                  ma:
+                    - time: 1699120000000
+                      value: 43750.00
+                      period: 50
+                    - time: 1699120000000
+                      value: 43500.00
+                      period: 200
+                  ema:
+                    - time: 1699120000000
+                      value: 43800.00
+                      period: 12
+                  rsi:
+                    - time: 1699120000000
+                      value: 65.42
+                      period: 14
+                  macd:
+                    - time: 1699120000000
+                      value: 125.50
+                      signal: 110.30
+                      histogram: 15.20
+                  bollinger:
+                    - time: 1699120000000
+                      upper: 44200.00
+                      middle: 43872.50
+                      lower: 43545.00
+                  vwap:
+                    - time: 1699120000000
+                      value: 43850.00
+        '400':
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Symbol not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /analysis:
+    post:
+      tags:
+        - Analysis
+      summary: Run Comprehensive Analysis
+      description: Performs a comprehensive multi-method analysis including indicators, smart money concepts, ICT, Wyckoff, Elliott Wave, volume profile, session analysis, news, and intermarket analysis. Returns a detailed trading decision with confidence metrics.
+      operationId: runAnalysis
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - symbol
+              properties:
+                symbol:
+                  type: string
+                  description: The canonical symbol to analyze
+                  example: BTCUSD
+                timeframe:
+                  type: string
+                  description: The timeframe for analysis
+                  enum:
+                    - M1
+                    - M5
+                    - M15
+                    - H1
+                    - H4
+                    - D1
+                    - W1
+                    - MN
+                  default: H1
+                  example: H1
+                limit:
+                  type: integer
+                  description: Number of candles to analyze (1-1000)
+                  minimum: 1
+                  maximum: 1000
+                  default: 200
+                  example: 200
+      responses:
+        '200':
+          description: Analysis completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisResponse'
+              example:
+                symbol: BTCUSD
+                timeframe: H1
+                candleCount: 200
+                indicators:
+                  rsi: 65.42
+                  macd: { value: 125.50, signal: 110.30, histogram: 15.20 }
+                  ma: { ma50: 43750.00, ma200: 43500.00 }
+                  bollinger: { upper: 44200.00, middle: 43872.50, lower: 43545.00 }
+                  vwap: 43850.00
+                  atr: 125.30
+                smartMoneyConcepts:
+                  orderBlocks:
+                    - level: 43500.00
+                      type: bullish
+                      confidence: 0.75
+                  fairValueGaps:
+                    - time: 1699120000000
+                      upper: 43900.00
+                      lower: 43750.00
+                      type: bullish
+                  liquidityLevels:
+                    - price: 44200.00
+                      type: resistance
+                    - price: 43500.00
+                      type: support
+                  marketStructure:
+                    trend: bullish
+                    phase: accumulation
+                    keyLevels: [43500.00, 44200.00]
+                ict:
+                  killZones:
+                    - name: London
+                      start: 8.0
+                      end: 12.0
+                    - name: New York
+                      start: 13.0
+                      end: 17.0
+                  targetZones: [44000.00, 44200.00, 44500.00]
+                  mitigationLevels: [43500.00, 43800.00]
+                  premiumDiscount:
+                    premium: 44200.00
+                    discount: 43500.00
+                wyckoff:
+                  phase: distribution
+                  events:
+                    - type: accumulation
+                      time: 1699120000000
+                      price: 43500.00
+                  springTest: false
+                  upthrust: false
+                elliottWave:
+                  currentWave: 3
+                  waveCount: 5
+                  target: 44500.00
+                  stop: 43300.00
+                volumeProfile:
+                  vwap: 43850.00
+                  pocs: [43600.00, 43850.00, 44000.00]
+                  highVolume: 43850.00
+                  lowVolume: 43500.00
+                session:
+                  date: 2025-01-15
+                  dayOfWeek: Wednesday
+                  session: NY
+                  open: 43700.00
+                  high: 43900.00
+                  low: 43650.00
+                  close: 43872.50
+                news:
+                  - headline: 'FOMC Rate Decision Looms'
+                    timestamp: 1699123456789
+                    impact: high
+                    category: FOMC
+                intermarket:
+                  dxy: 102.50
+                  us10y: 4.20
+                  gold: 2015.00
+                  correlation: -0.85
+                probability:
+                  long: 0.65
+                  short: 0.35
+                confidence:
+                  overall: 0.72
+                  technical: 0.80
+                  fundamental: 0.65
+                  sentiment: 0.70
+                tradeQuality:
+                  score: 78
+                  riskReward: 2.5
+                  positionSize: 2.0
+                  stopLoss: 43500.00
+                  takeProfit: 44500.00
+                decision:
+                  action: buy
+                  entry: 43800.00
+                  stopLoss: 43500.00
+                  takeProfit: 44500.00
+                  riskReward: 2.5
+                  rational: 'Strong technical signals align with bullish momentum'
+        '400':
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: error
+                code: VALIDATION_ERROR
+                message: 'Invalid symbol "INVALID". Supported symbols: BTCUSD, ETHUSD, ...'
+                timestamp: 1699123456789
+        '404':
+          description: Symbol not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: error
+                code: NOT_FOUND
+                message: '"BTCUSD" is not available from any data provider'
+                timestamp: 1699123456789
+        '422':
+          description: Unprocessable entity - invalid analysis parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: error
+                code: UNPROCESSABLE_ENTITY
+                message: 'Unable to analyze BTCUSD with timeframe M1 and limit 10000'
+                timestamp: 1699123456789
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: Upstream provider error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /news:
+    get:
+      tags:
+        - News
+      summary: Get News
+      description: Returns recent market news and economic events for a given symbol.
+      operationId: getNews
+      parameters:
+        - name: symbol
+          in: query
+          required: true
+          description: The canonical symbol to fetch news for
+          schema:
+            type: string
+            example: BTCUSD
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of news items to return (1-50)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+            example: 10
+      responses:
+        '200':
+          description: News retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsResponse'
+              example:
+                symbol: BTCUSD
+                count: 10
+                news:
+                  - headline: 'Bitcoin Surges Past $44,000 on ETF Optimism'
+                    timestamp: 1699123456789
+                    source: Reuters
+                    impact: high
+                    category: CRYPTO_ETF
+                    summary: 'Bitcoin rallied to a new 2025 high as institutional interest grows'
+                    url: 'https://reuters.com/bitcoin-etf-optimism'
+                  - headline: 'FOMC Minutes Show Dovish Stance'
+                    timestamp: 1699120456789
+                    source: Bloomberg
+                    impact: medium
+                    category: FOMC
+                    summary: 'Federal Reserve signals potential rate cuts in H2 2025'
+                    url: 'https://bloomberg.com/fomc-minutes'
+        '400':
+          description: Invalid symbol parameter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Symbol not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ok]
+          description: Service health status
+        timestamp:
+          type: integer
+          description: Current server timestamp in milliseconds
+          example: 1699123456789
+        version:
+          type: string
+          description: API version
+          example: 1.0.0
+        uptime:
+          type: integer
+          description: Server uptime in seconds
+          example: 3600
+        providerStatus:
+          type: object
+          description: Status of each data provider
+          properties:
+            bybit:
+              type: string
+              enum: [healthy, degraded, offline]
+            capital:
+              type: string
+              enum: [healthy, degraded, offline]
+            alphaVantage:
+              type: string
+              enum: [healthy, degraded, offline]
+      required:
+        - status
+        - timestamp
+        - version
+
+    PriceResponse:
+      type: object
+      properties:
+        price:
+          type: number
+          description: Current market price (last traded price)
+          example: 43872.50
+        bid:
+          type: number
+          description: Current bid price
+          example: 43870.00
+        ask:
+          type: number
+          description: Current ask price
+          example: 43875.00
+        spread:
+          type: number
+          description: Bid-ask spread
+          example: 5.00
+        timestamp:
+          type: integer
+          description: Price timestamp in milliseconds
+          example: 1699123456789
+        resolvedInstrument:
+          type: object
+          properties:
+            category:
+              type: string
+              description: Provider-specific instrument category
+              example: spot
+            symbol:
+              type: string
+              description: Provider-specific symbol
+              example: BTCUSDT
+      required:
+        - price
+        - bid
+        - ask
+        - spread
+        - timestamp
+
+    Candle:
+      type: object
+      properties:
+        time:
+          type: integer
+          description: Candle open time in milliseconds
+          example: 1699120000000
+        open:
+          type: number
+          description: Opening price
+          example: 43800.00
+        high:
+          type: number
+          description: Highest price
+          example: 43900.00
+        low:
+          type: number
+          description: Lowest price
+          example: 43750.00
+        close:
+          type: number
+          description: Closing price
+          example: 43872.50
+        volume:
+          type: number
+          description: Trading volume
+          example: 1250.45
+      required:
+        - time
+        - open
+        - high
+        - low
+        - close
+        - volume
+
+    CandlesResponse:
+      type: object
+      properties:
+        symbol:
+          type: string
+          description: The requested symbol
+          example: BTCUSD
+        timeframe:
+          type: string
+          description: The timeframe of the candles
+          example: H1
+        count:
+          type: integer
+          description: Number of candles returned
+          example: 200
+        candles:
+          type: array
+          items:
+            $ref: '#/components/schemas/Candle'
+      required:
+        - symbol
+        - timeframe
+        - count
+        - candles
+
+    IndicatorSet:
+      type: object
+      properties:
+        ma:
+          type: array
+          description: Moving averages
+          items:
+            type: object
+            properties:
+              time:
+                type: integer
+              value:
+                type: number
+              period:
+                type: integer
+        ema:
+          type: array
+          description: Exponential moving averages
+          items:
+            type: object
+            properties:
+              time:
+                type: integer
+              value:
+                type: number
+              period:
+                type: integer
+        rsi:
+          type: array
+          description: Relative Strength Index values
+          items:
+            type: object
+            properties:
+              time:
+                type: integer
+              value:
+                type: number
+              period:
+                type: integer
+        macd:
+          type: array
+          description: MACD values
+          items:
+            type: object
+            properties:
+              time:
+                type: integer
+              value:
+                type: number
+              signal:
+                type: number
+              histogram:
+                type: number
+        bollinger:
+          type: array
+          description: Bollinger Bands values
+          items:
+            type: object
+            properties:
+              time:
+                type: integer
+              upper:
+                type: number
+              middle:
+                type: number
+              lower:
+                type: number
+        vwap:
+          type: array
+          description: Volume Weighted Average Price
+          items:
+            type: object
+            properties:
+              time:
+                type: integer
+              value:
+                type: number
+        atr:
+          type: array
+          description: Average True Range
+          items:
+            type: object
+            properties:
+              time:
+                type: integer
+              value:
+                type: number
+              period:
+                type: integer
+
+    IndicatorsResponse:
+      type: object
+      properties:
+        symbol:
+          type: string
+          description: The requested symbol
+          example: BTCUSD
+        timeframe:
+          type: string
+          description: The timeframe of the indicators
+          example: H1
+        indicators:
+          $ref: '#/components/schemas/IndicatorSet'
+      required:
+        - symbol
+        - timeframe
+        - indicators
+
+    SMC:
+      type: object
+      properties:
+        orderBlocks:
+          type: array
+          description: Smart money order blocks
+          items:
+            type: object
+            properties:
+              level:
+                type: number
+              type:
+                type: string
+                enum: [bullish, bearish]
+              confidence:
+                type: number
+                minimum: 0
+                maximum: 1
+        fairValueGaps:
+          type: array
+          description: Fair value gaps
+          items:
+            type: object
+            properties:
+              time:
+                type: integer
+              upper:
+                type: number
+              lower:
+                type: number
+              type:
+                type: string
+                enum: [bullish, bearish]
+        liquidityLevels:
+          type: array
+          description: Key liquidity levels
+          items:
+            type: object
+            properties:
+              price:
+                type: number
+              type:
+                type: string
+                enum: [resistance, support]
+        marketStructure:
+          type: object
+          properties:
+            trend:
+              type: string
+              enum: [bullish, bearish, sideways]
+            phase:
+              type: string
+              enum: [accumulation, markup, distribution, markdown]
+            keyLevels:
+              type: array
+              items:
+                type: number
+
+    ICT:
+      type: object
+      properties:
+        killZones:
+          type: array
+          description: ICT kill zones (optimal trading times)
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                enum: [London, New York, Asia, London-NewYork]
+              start:
+                type: number
+                description: Start hour (0-23)
+              end:
+                type: number
+                description: End hour (0-23)
+        targetZones:
+          type: array
+          description: Price target zones
+          items:
+            type: number
+        mitigationLevels:
+          type: array
+          description: Mitigation levels
+          items:
+            type: number
+        premiumDiscount:
+          type: object
+          properties:
+            premium:
+              type: number
+              description: Premium zone level
+            discount:
+              type: number
+              description: Discount zone level
+
+    Wyckoff:
+      type: object
+      properties:
+        phase:
+          type: string
+          enum: [accumulation, markup, distribution, markdown]
+        events:
+          type: array
+          description: Wyckoff events
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                enum: [accumulation, distribution, springTest, upthrust, shakeout]
+              time:
+                type: integer
+              price:
+                type: number
+        springTest:
+          type: boolean
+        upthrust:
+          type: boolean
+
+    ElliottWave:
+      type: object
+      properties:
+        currentWave:
+          type: integer
+          description: Current Elliott Wave number (1-5 for impulse, a-b-c for corrective)
+        waveCount:
+          type: integer
+          description: Total waves counted
+        target:
+          type: number
+          description: Price target
+        stop:
+          type: number
+          description: Stop loss level
+
+    VolumeProfile:
+      type: object
+      properties:
+        vwap:
+          type: number
+          description: Volume Weighted Average Price
+        pocs:
+          type: array
+          description: Points of Control (highest volume nodes)
+          items:
+            type: number
+        highVolume:
+          type: number
+          description: High volume node
+        lowVolume:
+          type: number
+          description: Low volume node
+
+    Session:
+      type: object
+      properties:
+        date:
+          type: string
+          description: Session date
+          example: 2025-01-15
+        dayOfWeek:
+          type: string
+          enum: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]
+        session:
+          type: string
+          enum: [Asia, London, NY, Sydney]
+        open:
+          type: number
+        high:
+          type: number
+        low:
+          type: number
+        close:
+          type: number
+
+    Probability:
+      type: object
+      properties:
+        long:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Probability of long position being profitable
+        short:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Probability of short position being profitable
+
+    Confidence:
+      type: object
+      properties:
+        overall:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Overall confidence score
+        technical:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Technical analysis confidence
+        fundamental:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Fundamental analysis confidence
+        sentiment:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Sentiment analysis confidence
+
+    TradeQuality:
+      type: object
+      properties:
+        score:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Overall trade quality score
+        riskReward:
+          type: number
+          description: Risk-reward ratio
+        positionSize:
+          type: number
+          description: Recommended position size (% of capital)
+        stopLoss:
+          type: number
+          description: Recommended stop loss level
+        takeProfit:
+          type: number
+          description: Recommended take profit level
+
+    Decision:
+      type: object
+      properties:
+        action:
+          type: string
+          enum: [buy, sell, hold, neutral]
+          description: Recommended trading action
+        entry:
+          type: number
+          description: Recommended entry price
+        stopLoss:
+          type: number
+          description: Recommended stop loss price
+        takeProfit:
+          type: number
+          description: Recommended take profit price
+        riskReward:
+          type: number
+          description: Risk-reward ratio
+        rational:
+          type: string
+          description: Rationale for the decision
+
+    Intermarket:
+      type: object
+      properties:
+        dxy:
+          type: number
+          description: US Dollar Index value
+        us10y:
+          type: number
+          description: 10-Year Treasury Yield
+        gold:
+          type: number
+          description: Gold price in USD
+        correlation:
+          type: number
+          description: Correlation coefficient with DXY
+
+    AnalysisResponse:
+      type: object
+      properties:
+        symbol:
+          type: string
+          description: The analyzed symbol
+          example: BTCUSD
+        timeframe:
+          type: string
+          description: The timeframe used for analysis
+          example: H1
+        candleCount:
+          type: integer
+          description: Number of candles analyzed
+          example: 200
+        indicators:
+          type: object
+          description: Technical indicators summary
+          properties:
+            rsi:
+              type: number
+            macd:
+              type: object
+              properties:
+                value:
+                  type: number
+                signal:
+                  type: number
+                histogram:
+                  type: number
+            ma:
+              type: object
+              properties:
+                ma50:
+                  type: number
+                ma200:
+                  type: number
+            bollinger:
+              type: object
+              properties:
+                upper:
+                  type: number
+                middle:
+                  type: number
+                lower:
+                  type: number
+            vwap:
+              type: number
+            atr:
+              type: number
+        smartMoneyConcepts:
+          $ref: '#/components/schemas/SMC'
+        ict:
+          $ref: '#/components/schemas/ICT'
+        wyckoff:
+          $ref: '#/components/schemas/Wyckoff'
+        elliottWave:
+          $ref: '#/components/schemas/ElliottWave'
+        volumeProfile:
+          $ref: '#/components/schemas/VolumeProfile'
+        session:
+          $ref: '#/components/schemas/Session'
+        news:
+          type: array
+          items:
+            type: object
+            properties:
+              headline:
+                type: string
+              timestamp:
+                type: integer
+              impact:
+                type: string
+                enum: [low, medium, high]
+              category:
+                type: string
+        intermarket:
+          $ref: '#/components/schemas/Intermarket'
+        probability:
+          $ref: '#/components/schemas/Probability'
+        confidence:
+          $ref: '#/components/schemas/Confidence'
+        tradeQuality:
+          $ref: '#/components/schemas/TradeQuality'
+        decision:
+          $ref: '#/components/schemas/Decision'
+      required:
+        - symbol
+        - timeframe
+        - candleCount
+        - decision
+
+    NewsItem:
+      type: object
+      properties:
+        headline:
+          type: string
+          description: News headline
+          example: 'Bitcoin Surges Past $44,000 on ETF Optimism'
+        timestamp:
+          type: integer
+          description: News timestamp in milliseconds
+          example: 1699123456789
+        source:
+          type: string
+          description: News source
+          example: Reuters
+        impact:
+          type: string
+          enum: [low, medium, high]
+          description: Market impact level
+          example: high
+        category:
+          type: string
+          description: News category
+          example: CRYPTO_ETF
+        summary:
+          type: string
+          description: News summary
+          example: 'Bitcoin rallied to a new 2025 high as institutional interest grows'
+        url:
+          type: string
+          description: Full article URL
+          example: 'https://reuters.com/bitcoin-etf-optimism'
+      required:
+        - headline
+        - timestamp
+
+    NewsResponse:
+      type: object
+      properties:
+        symbol:
+          type: string
+          description: The requested symbol
+          example: BTCUSD
+        count:
+          type: integer
+          description: Number of news items returned
+          example: 10
+        news:
+          type: array
+          items:
+            $ref: '#/components/schemas/NewsItem'
+      required:
+        - symbol
+        - count
+        - news
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [error]
+          description: Error status
+          example: error
+        code:
+          type: string
+          description: Error code
+          enum:
+            - VALIDATION_ERROR
+            - NOT_FOUND
+            - PROVIDER_ERROR
+            - RATE_LIMITED
+            - UNPROCESSABLE_ENTITY
+            - INTERNAL_ERROR
+          example: VALIDATION_ERROR
+        message:
+          type: string
+          description: Human-readable error message
+          example: 'Invalid symbol "INVALID"'
+        timestamp:
+          type: integer
+          description: Error timestamp in milliseconds
+          example: 1699123456789
+        details:
+          type: object
+          description: Additional error details (optional)
+      required:
+        - status
+        - code
+        - message
+        - timestamp
+
+  securitySchemes: {}
