@@ -1,0 +1,969 @@
+openapi: 3.1.0
+info:
+  title: GoldMatrix API Enterprise
+  description: Institutional-grade market data and analysis API for gold, metals, crypto, forex, and indices.
+  version: 1.0.0
+  contact:
+    name: GoldMatrix Support
+    email: support@goldmatrix.io
+  license:
+    name: Proprietary
+    url: https://goldmatrix.io/terms
+
+servers:
+  - url: https://goldmatrix-api-enterprise.moneybillioneria.workers.dev
+    description: Production Server
+
+tags:
+  - name: Health
+    description: Service health and readiness checks
+  - name: Market Data
+    description: Real-time and historical market data
+  - name: Indicators
+    description: Technical indicators and metrics
+  - name: Analysis
+    description: Comprehensive market analysis and trading signals
+  - name: News
+    description: Market news and economic events
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health Check
+      description: Returns the service health status and version information.
+      operationId: getHealth
+      x-openai-isConsequential: false
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '500':
+          description: Service is unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /price:
+    get:
+      tags:
+        - Market Data
+      summary: Get Live Price
+      description: Returns the current live price, bid, ask, spread, and timestamp for a given symbol.
+      operationId: getPrice
+      x-openai-isConsequential: false
+      parameters:
+        - name: symbol
+          in: query
+          required: true
+          description: The canonical symbol to fetch the price for.
+          schema:
+            $ref: '#/components/schemas/SymbolEnum'
+      responses:
+        '200':
+          description: Price data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriceResponse'
+        '400':
+          description: Invalid symbol parameter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Symbol not found or not available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: Upstream provider error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /candles:
+    get:
+      tags:
+        - Market Data
+      summary: Get Candles
+      description: Returns historical candlestick data for a given symbol, timeframe, and limit.
+      operationId: getCandles
+      x-openai-isConsequential: false
+      parameters:
+        - name: symbol
+          in: query
+          required: true
+          description: The canonical symbol to fetch candles for.
+          schema:
+            $ref: '#/components/schemas/SymbolEnum'
+        - name: timeframe
+          in: query
+          required: false
+          description: The timeframe for each candle.
+          schema:
+            $ref: '#/components/schemas/TimeframeEnum'
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of candles to return.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 200
+      responses:
+        '200':
+          description: Candles retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CandlesResponse'
+        '400':
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Symbol not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /indicators:
+    get:
+      tags:
+        - Indicators
+      summary: Get Technical Indicators
+      description: Returns technical indicators for a given symbol, timeframe, and limit.
+      operationId: getIndicators
+      x-openai-isConsequential: false
+      parameters:
+        - name: symbol
+          in: query
+          required: true
+          description: The canonical symbol to fetch indicators for.
+          schema:
+            $ref: '#/components/schemas/SymbolEnum'
+        - name: timeframe
+          in: query
+          required: false
+          description: The timeframe for indicator calculation.
+          schema:
+            $ref: '#/components/schemas/TimeframeEnum'
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of candles to calculate indicators for.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 200
+      responses:
+        '200':
+          description: Indicators retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IndicatorsResponse'
+        '400':
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Symbol not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /analysis:
+    post:
+      tags:
+        - Analysis
+      summary: Run Comprehensive Analysis
+      description: Performs a comprehensive multi-method analysis including indicators, smart money concepts, ICT, Wyckoff, Elliott Wave, volume profile, session analysis, news, and intermarket analysis. Returns a detailed trading decision with confidence metrics.
+      operationId: runAnalysis
+      x-openai-isConsequential: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnalysisRequest'
+      responses:
+        '200':
+          description: Analysis completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisResponse'
+        '400':
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Symbol not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Unprocessable entity - invalid analysis parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: Upstream provider error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /news:
+    get:
+      tags:
+        - News
+      summary: Get News
+      description: Returns recent market news and economic events for a given symbol.
+      operationId: getNews
+      x-openai-isConsequential: false
+      parameters:
+        - name: symbol
+          in: query
+          required: true
+          description: The canonical symbol to fetch news for.
+          schema:
+            $ref: '#/components/schemas/SymbolEnum'
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of news items to return.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+      responses:
+        '200':
+          description: News retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsResponse'
+        '400':
+          description: Invalid symbol parameter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Symbol not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    SymbolEnum:
+      type: string
+      description: Canonical market symbol.
+      enum:
+        - BTCUSD
+        - ETHUSD
+        - SOLUSD
+        - XRPUSD
+        - DOGEUSD
+        - ADAUSD
+        - LINKUSD
+        - AVAXUSD
+        - TRXUSD
+        - TONUSD
+        - PEPEUSD
+        - APTUSD
+        - SUIUSD
+        - XAUUSD
+        - XAGUSD
+        - EURUSD
+        - GBPUSD
+        - USDJPY
+        - USDCHF
+        - USDCAD
+        - AUDUSD
+        - NZDUSD
+        - NAS100
+        - US30
+        - SPX500
+        - WTI
+        - BRENT
+        - DXY
+        - US10Y
+
+    TimeframeEnum:
+      type: string
+      description: Candle/indicator timeframe.
+      enum:
+        - M1
+        - M5
+        - M15
+        - H1
+        - H4
+        - D1
+        - W1
+        - MN
+      default: H1
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        timestamp:
+          type: integer
+          description: Current server timestamp in milliseconds.
+        version:
+          type: string
+        uptime:
+          type: integer
+          description: Server uptime in seconds.
+        providerStatus:
+          type: object
+          properties:
+            bybit:
+              type: string
+              enum: [healthy, degraded, offline]
+            capital:
+              type: string
+              enum: [healthy, degraded, offline]
+            alphaVantage:
+              type: string
+              enum: [healthy, degraded, offline]
+      required:
+        - status
+        - timestamp
+        - version
+
+    PriceResponse:
+      type: object
+      properties:
+        price:
+          type: number
+          description: Current market price (last traded price).
+        bid:
+          type: number
+        ask:
+          type: number
+        spread:
+          type: number
+        timestamp:
+          type: integer
+          description: Price timestamp in milliseconds.
+        resolvedInstrument:
+          type: object
+          properties:
+            category:
+              type: string
+              description: Provider-specific instrument category.
+            symbol:
+              type: string
+              description: Provider-specific symbol.
+      required:
+        - price
+        - bid
+        - ask
+        - spread
+        - timestamp
+
+    Candle:
+      type: object
+      properties:
+        time:
+          type: integer
+          description: Candle open time in milliseconds.
+        open:
+          type: number
+        high:
+          type: number
+        low:
+          type: number
+        close:
+          type: number
+        volume:
+          type: number
+      required:
+        - time
+        - open
+        - high
+        - low
+        - close
+        - volume
+
+    CandlesResponse:
+      type: object
+      properties:
+        symbol:
+          type: string
+        timeframe:
+          type: string
+        count:
+          type: integer
+        candles:
+          type: array
+          items:
+            $ref: '#/components/schemas/Candle'
+      required:
+        - symbol
+        - timeframe
+        - count
+        - candles
+
+    IndicatorSeriesPoint:
+      type: object
+      properties:
+        time:
+          type: integer
+        value:
+          type: number
+        period:
+          type: integer
+
+    IndicatorSet:
+      type: object
+      properties:
+        ma:
+          type: array
+          description: Moving averages.
+          items:
+            $ref: '#/components/schemas/IndicatorSeriesPoint'
+        ema:
+          type: array
+          description: Exponential moving averages.
+          items:
+            $ref: '#/components/schemas/IndicatorSeriesPoint'
+        rsi:
+          type: array
+          description: Relative Strength Index values.
+          items:
+            $ref: '#/components/schemas/IndicatorSeriesPoint'
+        macd:
+          type: array
+          description: MACD values.
+          items:
+            type: object
+            properties:
+              time:
+                type: integer
+              value:
+                type: number
+              signal:
+                type: number
+              histogram:
+                type: number
+        bollinger:
+          type: array
+          description: Bollinger Bands values.
+          items:
+            type: object
+            properties:
+              time:
+                type: integer
+              upper:
+                type: number
+              middle:
+                type: number
+              lower:
+                type: number
+        vwap:
+          type: array
+          description: Volume Weighted Average Price.
+          items:
+            type: object
+            properties:
+              time:
+                type: integer
+              value:
+                type: number
+        atr:
+          type: array
+          description: Average True Range.
+          items:
+            $ref: '#/components/schemas/IndicatorSeriesPoint'
+
+    IndicatorsResponse:
+      type: object
+      properties:
+        symbol:
+          type: string
+        timeframe:
+          type: string
+        indicators:
+          $ref: '#/components/schemas/IndicatorSet'
+      required:
+        - symbol
+        - timeframe
+        - indicators
+
+    SMC:
+      type: object
+      properties:
+        orderBlocks:
+          type: array
+          items:
+            type: object
+            properties:
+              level:
+                type: number
+              type:
+                type: string
+                enum: [bullish, bearish]
+              confidence:
+                type: number
+                minimum: 0
+                maximum: 1
+        fairValueGaps:
+          type: array
+          items:
+            type: object
+            properties:
+              time:
+                type: integer
+              upper:
+                type: number
+              lower:
+                type: number
+              type:
+                type: string
+                enum: [bullish, bearish]
+        liquidityLevels:
+          type: array
+          items:
+            type: object
+            properties:
+              price:
+                type: number
+              type:
+                type: string
+                enum: [resistance, support]
+        marketStructure:
+          type: object
+          properties:
+            trend:
+              type: string
+              enum: [bullish, bearish, sideways]
+            phase:
+              type: string
+              enum: [accumulation, markup, distribution, markdown]
+            keyLevels:
+              type: array
+              items:
+                type: number
+
+    ICT:
+      type: object
+      properties:
+        killZones:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                enum: [London, New York, Asia, London-NewYork]
+              start:
+                type: number
+                description: Start hour (0-23).
+              end:
+                type: number
+                description: End hour (0-23).
+        targetZones:
+          type: array
+          items:
+            type: number
+        mitigationLevels:
+          type: array
+          items:
+            type: number
+        premiumDiscount:
+          type: object
+          properties:
+            premium:
+              type: number
+            discount:
+              type: number
+
+    Wyckoff:
+      type: object
+      properties:
+        phase:
+          type: string
+          enum: [accumulation, markup, distribution, markdown]
+        events:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                enum: [accumulation, distribution, springTest, upthrust, shakeout]
+              time:
+                type: integer
+              price:
+                type: number
+        springTest:
+          type: boolean
+        upthrust:
+          type: boolean
+
+    ElliottWave:
+      type: object
+      properties:
+        currentWave:
+          type: integer
+          description: Current Elliott Wave number (1-5 impulse, or corrective leg).
+        waveCount:
+          type: integer
+        target:
+          type: number
+        stop:
+          type: number
+
+    VolumeProfile:
+      type: object
+      properties:
+        vwap:
+          type: number
+        pocs:
+          type: array
+          description: Points of Control (highest volume nodes).
+          items:
+            type: number
+        highVolume:
+          type: number
+        lowVolume:
+          type: number
+
+    Session:
+      type: object
+      properties:
+        date:
+          type: string
+        dayOfWeek:
+          type: string
+          enum: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]
+        session:
+          type: string
+          enum: [Asia, London, NY, Sydney]
+        open:
+          type: number
+        high:
+          type: number
+        low:
+          type: number
+        close:
+          type: number
+
+    Probability:
+      type: object
+      properties:
+        long:
+          type: number
+          minimum: 0
+          maximum: 1
+        short:
+          type: number
+          minimum: 0
+          maximum: 1
+
+    Confidence:
+      type: object
+      properties:
+        overall:
+          type: number
+          minimum: 0
+          maximum: 1
+        technical:
+          type: number
+          minimum: 0
+          maximum: 1
+        fundamental:
+          type: number
+          minimum: 0
+          maximum: 1
+        sentiment:
+          type: number
+          minimum: 0
+          maximum: 1
+
+    TradeQuality:
+      type: object
+      properties:
+        score:
+          type: integer
+          minimum: 0
+          maximum: 100
+        riskReward:
+          type: number
+        positionSize:
+          type: number
+          description: Recommended position size (% of capital).
+        stopLoss:
+          type: number
+        takeProfit:
+          type: number
+
+    Decision:
+      type: object
+      properties:
+        action:
+          type: string
+          enum: [buy, sell, hold, neutral]
+        entry:
+          type: number
+        stopLoss:
+          type: number
+        takeProfit:
+          type: number
+        riskReward:
+          type: number
+        rational:
+          type: string
+
+    Intermarket:
+      type: object
+      properties:
+        dxy:
+          type: number
+        us10y:
+          type: number
+        gold:
+          type: number
+        correlation:
+          type: number
+          description: Correlation coefficient with DXY.
+
+    AnalysisRequest:
+      type: object
+      required:
+        - symbol
+      properties:
+        symbol:
+          $ref: '#/components/schemas/SymbolEnum'
+        timeframe:
+          $ref: '#/components/schemas/TimeframeEnum'
+        limit:
+          type: integer
+          description: Number of candles to analyze.
+          minimum: 1
+          maximum: 1000
+          default: 200
+
+    AnalysisResponse:
+      type: object
+      properties:
+        symbol:
+          type: string
+        timeframe:
+          type: string
+        candleCount:
+          type: integer
+        indicators:
+          type: object
+          properties:
+            rsi:
+              type: number
+            macd:
+              type: object
+              properties:
+                value:
+                  type: number
+                signal:
+                  type: number
+                histogram:
+                  type: number
+            ma:
+              type: object
+              properties:
+                ma50:
+                  type: number
+                ma200:
+                  type: number
+            bollinger:
+              type: object
+              properties:
+                upper:
+                  type: number
+                middle:
+                  type: number
+                lower:
+                  type: number
+            vwap:
+              type: number
+            atr:
+              type: number
+        smartMoneyConcepts:
+          $ref: '#/components/schemas/SMC'
+        ict:
+          $ref: '#/components/schemas/ICT'
+        wyckoff:
+          $ref: '#/components/schemas/Wyckoff'
+        elliottWave:
+          $ref: '#/components/schemas/ElliottWave'
+        volumeProfile:
+          $ref: '#/components/schemas/VolumeProfile'
+        session:
+          $ref: '#/components/schemas/Session'
+        news:
+          type: array
+          items:
+            type: object
+            properties:
+              headline:
+                type: string
+              timestamp:
+                type: integer
+              impact:
+                type: string
+                enum: [low, medium, high]
+              category:
+                type: string
+        intermarket:
+          $ref: '#/components/schemas/Intermarket'
+        probability:
+          $ref: '#/components/schemas/Probability'
+        confidence:
+          $ref: '#/components/schemas/Confidence'
+        tradeQuality:
+          $ref: '#/components/schemas/TradeQuality'
+        decision:
+          $ref: '#/components/schemas/Decision'
+      required:
+        - symbol
+        - timeframe
+        - candleCount
+        - decision
+
+    NewsItem:
+      type: object
+      properties:
+        headline:
+          type: string
+        timestamp:
+          type: integer
+          description: News timestamp in milliseconds.
+        source:
+          type: string
+        impact:
+          type: string
+          enum: [low, medium, high]
+        category:
+          type: string
+        summary:
+          type: string
+        url:
+          type: string
+      required:
+        - headline
+        - timestamp
+
+    NewsResponse:
+      type: object
+      properties:
+        symbol:
+          type: string
+        count:
+          type: integer
+        news:
+          type: array
+          items:
+            $ref: '#/components/schemas/NewsItem'
+      required:
+        - symbol
+        - count
+        - news
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [error]
+        code:
+          type: string
+          enum:
+            - VALIDATION_ERROR
+            - NOT_FOUND
+            - PROVIDER_ERROR
+            - RATE_LIMITED
+            - UNPROCESSABLE_ENTITY
+            - INTERNAL_ERROR
+        message:
+          type: string
+        timestamp:
+          type: integer
+        details:
+          type: object
+      required:
+        - status
+        - code
+        - message
+        - timestamp
