@@ -1,0 +1,45 @@
+GoldMatrix AI
+Privacy Policy
+Last updated: September 17, 2026
+This Privacy Policy explains how GoldMatrix AI ("the Service", "we", "our") handles data when you interact with it, whether through the GoldMatrix AI Custom GPT, the GoldMatrix API Enterprise backend, or any connected integration (including Telegram).
+
+1. What GoldMatrix AI Is
+GoldMatrix AI is an institutional-style market analysis assistant covering gold, metals, crypto, forex, and indices. It works by calling the GoldMatrix API Enterprise backend, which retrieves live market data (price, candles, indicators, news, multi-method technical analysis) from third-party financial data providers and returns a structured analysis.
+
+2. Data We Process
+To answer a request, the Service sends the following to the GoldMatrix API backend:
+
+The market symbol you specify (e.g. XAUUSD, BTCUSD)
+The requested timeframe (e.g. M1, H1, D1) and candle count, when applicable
+The request timestamp, needed to serve live data
+We do not request, collect, or store personal information such as your name, email address, financial account details, or trading account credentials through this Service. No login or account creation is required to use it.
+
+3. How Data Is Used
+Symbol and timeframe parameters are used solely to fetch live market data from upstream providers (for example, market data and macroeconomic data sources) and to compute the technical analysis returned to you. This data is used only to generate the response to your specific request.
+
+We do not sell, rent, or share your requests with advertisers or unrelated third parties.
+Requests are only relayed to the market-data providers strictly necessary to produce the analysis you asked for.
+
+4. Data Retention
+The GoldMatrix API backend does not maintain a persistent database of individual user requests. Standard, short-lived infrastructure logs (for uptime monitoring and abuse prevention) may be kept temporarily by our hosting provider, consistent with normal server operation, and are not used to build user profiles.
+
+5. Third-Party Data Providers
+To deliver live prices, candles, indicators, and news, GoldMatrix API Enterprise queries third-party financial data providers. Each provider processes only the market symbol and timeframe needed to fulfill the request, under its own respective terms of service.
+
+6. Platform-Level Processing
+If you access GoldMatrix AI through a third-party platform (such as a Custom GPT interface or Telegram), that platform's own privacy policy also applies to how it handles your messages and account information. This policy covers only the data GoldMatrix AI itself processes when generating an analysis.
+
+7. Children's Privacy
+This Service is not directed at children and is not intended for use by individuals under the age of 18. We do not knowingly collect data from children.
+
+8. No Financial Advice
+GoldMatrix AI provides market data and automated technical analysis for informational purposes only. It does not constitute financial, investment, or trading advice, and no outcome is guaranteed. This policy governs data handling only, not the accuracy or suitability of any analysis.
+
+9. Changes to This Policy
+This Privacy Policy may be updated periodically to reflect changes in the Service or applicable requirements. The "Last updated" date at the top of this page will always reflect the most recent revision.
+
+10. Contact
+For privacy-related questions, contact us at:
+
+Telegram / WhatsApp: +213779921126
+GoldMatrix AI — Institutional-Grade Market Intelligence
